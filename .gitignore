@@ -1,0 +1,8 @@
+# Ignorar el archivo .env que contiene credenciales sensibles
+.env
+
+# Ignorar node_modules (dependencias de npm)
+node_modules/
+
+# Ignorar los archivos generados por la compilación
+dist/

@@ -1,0 +1,15 @@
+[
+    {
+        "CODIGO": 13,
+        "DOCUMENTO": 22222,
+        "NOMBRE": "FERNANDO DA SILVA",
+        "ENTREGA": 0,
+        "MONTOcuota": "1635",
+        "CANTIDADcuotas": "3",
+        "FECHAgestion": "21/01/2025",
+        "MONTOtotal": "57427.00",
+        "FECHApago": "24/01/2025",
+        "SUCURSAL": "SUCURSAL CERRO",
+        "PRD": ""
+    }
+]
