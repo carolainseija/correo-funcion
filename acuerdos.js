@@ -28,85 +28,112 @@ async function authenticate() {
   return oAuth2Client;
 }
 
-
 // Enviar correo con el archivo adjunto
 async function sendEmail(filePath, fileName) {
-  const auth = await authenticate();
-  const gmail = google.gmail({ version: "v1", auth });
+  try {
+    const auth = await authenticate();
+    const gmail = google.gmail({ version: "v1", auth });
 
-  const attachment = fs.readFileSync(filePath).toString("base64");
+    const attachment = fs.readFileSync(filePath).toString("base64");
 
-  const rawMessage = [
-    "From: carolainsilva1@gmail.com",
-    "To: carolainsilva1@gmail.com",
-    "Subject: Acuerdos Credito Directos Capta",
-    "Content-Type: multipart/mixed; boundary=boundary_string",
-    "",
-    "--boundary_string",
-    "Content-Type: text/plain; charset=UTF-8",
-    "",
-    "Estimados/as, espero que se encuentren bien, les envío los acuerdos generados en el día de hoy. ¡Saludos!, Capta.",
-    "",
-    "--boundary_string",
-    `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name="${fileName}"`,
-    `Content-Disposition: attachment; filename="${fileName}"`,
-    "Content-Transfer-Encoding: base64",
-    "",
-    attachment,
-    "",
-    "--boundary_string--",
-  ].join("\r\n");
+    const rawMessage = [
+      "From: carolainsilva1@gmail.com",
+      "To: carolainsilva1@gmail.com",
+      "Subject: Acuerdos Credito Directos Capta",
+      "Content-Type: multipart/mixed; boundary=boundary_string",
+      "",
+      "--boundary_string",
+      "Content-Type: text/plain; charset=UTF-8",
+      "",
+      "Estimados/as, espero que se encuentren bien, les envío los acuerdos generados en el día de hoy. ¡Saludos!, Capta.",
+      "",
+      "--boundary_string",
+      `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name="${fileName}"`,
+      `Content-Disposition: attachment; filename="${fileName}"`,
+      "Content-Transfer-Encoding: base64",
+      "",
+      attachment,
+      "",
+      "--boundary_string--",
+    ].join("\r\n");
 
-  const encodedMessage = Buffer.from(rawMessage)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    const encodedMessage = Buffer.from(rawMessage)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
 
-  const response = await gmail.users.messages.send({
-    userId: "me",
-    requestBody: {
-      raw: encodedMessage,
-    },
-  });
+    const response = await gmail.users.messages.send({
+      userId: "me",
+      requestBody: { raw: encodedMessage },
+    });
 
-  if (response.data.id) {
     console.log("Correo enviado con éxito:", response.data);
-  } else {
-    console.error("Error al enviar el correo:", response);
+  } catch (error) {
+    console.error("Error al enviar el correo:", error);
   }
+}
+
+// Función para descomponer la descripción
+function descomponerDescripcion(texto) {
+  if (!texto) return { FECHApago: "", MONTOcuota: "", CANTIDADcuotas: "", LUGARpago: "", MONTOtotal: "" };
+
+  const regexFechaPago = /Primer vencimiento:\s*(\d{2}\/\d{2}\/\d{4})/;
+  const regexMontoCuota = /Monto de cuota:\s*(\d+(?:\.\d{1,2})?)/;
+  const regexCantidadCuotas = /Cantidad de cuota\/s:\s*(\d+)/;
+  const regexLugarPago = /Lugar de pago:\s*([\w\s]+)/;
+  const regexMontoTotal = /Deuda mÃ¡xima total:\s*(\d+(?:\.\d{1,2})?)/;
+
+  return {
+    FECHApago: texto.match(regexFechaPago)?.[1] || "",
+    MONTOcuota: texto.match(regexMontoCuota)?.[1] || "",
+    CANTIDADcuotas: texto.match(regexCantidadCuotas)?.[1] || "",
+    LUGARpago: texto.match(regexLugarPago)?.[1]?.trim() || "",
+    MONTOtotal: texto.match(regexMontoTotal)?.[1] || "",
+  };
 }
 
 // Generar y enviar el archivo Excel
 async function generateAndSendEmail() {
-  const fecha = new Date();
-  const dia = String(fecha.getDate()).padStart(2, "0");
-  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-  const processedFilePath = path.join(
-    __dirname,
-    "uploads",
-    `acuerdos-${dia}-${mes}.xlsx`
-  );
-
-  // Datos proporcionados
-  const newdata = [
-    {
-      "CODIGO": 13,
-      "DOCUMENTO": 22222,
-      "NOMBRE": "FERNANDO DA SILVA",
-      "ENTREGA": 0,
-      "MONTOcuota": "1635",
-      "CANTIDADcuotas": "3",
-      "FECHAgestion": "21/01/2025",
-      "MONTOtotal": "57427.00",
-      "FECHApago": "24/01/2025",
-      "SUCURSAL": "SUCURSAL CERRO",
-      "PRD": ""
-    }
-  ];
-
   try {
-    // Crear un archivo Excel usando ExcelJS
+    const fecha = new Date();
+    const dia = String(fecha.getDate()).padStart(2, "0");
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const processedFilePath = path.join(__dirname, "uploads", `acuerdos-${dia}-${mes}.xlsx`);
+
+    // Asegurar que la carpeta uploads existe
+    if (!fs.existsSync(path.join(__dirname, "uploads"))) {
+      fs.mkdirSync(path.join(__dirname, "uploads"));
+    }
+
+    // Datos de ejemplo
+    const newdata1 = [
+      {
+        "ctacteca_dtAlta": "14/01/2025 16:35:42",
+        "personas_nNumeDocu": "5666666",
+        "personas_cContacto": "Maria ferreira",
+        "descripcion": "Deuda adquirida: FUCEREP TARDIA - Deuda mínima total: 3800.00 - Deuda máxima total: 3800.00 - Cantidad de cuota/s: 1 - Monto de cuota: 1934 - Primer vencimiento: 27/01/2025 - Observación corta: 1*1934-abitab-27/01 - Lugar de pago: abitab",
+      }
+    ];
+
+    const newdata = newdata1.map(row => {
+      const descripcion = descomponerDescripcion(row.descripcion);
+      return {
+        CODIGO: 13,
+        DOCUMENTO: row.personas_nNumeDocu || "",
+        NOMBRE: row.personas_cContacto || "",
+        ENTREGA: 0,
+        MONTOcuota: descripcion.MONTOcuota || "",
+        CANTIDADcuotas: descripcion.CANTIDADcuotas || "",
+        FECHAgestion: "21/01/2025",
+        MONTOtotal: descripcion.MONTOtotal || "",
+        FECHApago: descripcion.FECHApago || "",
+        SUCURSAL: descripcion.LUGARpago || "",
+        PRD: "",
+      };
+    });
+
+    // Crear archivo Excel
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Acuerdos");
 
@@ -125,30 +152,17 @@ async function generateAndSendEmail() {
       "PRD",
     ];
     worksheet.addRow(headers);
+    newdata.forEach(row => worksheet.addRow(headers.map(key => row[key] || "")));
 
-    // Agregar los datos de newdata al archivo Excel
-    newdata.forEach((row) => {
-      const rowData = headers.map((key) => row[key] || "");
-      worksheet.addRow(rowData);
-    });
-
-    // Escribir el archivo Excel
     await workbook.xlsx.writeFile(processedFilePath);
-
-    // Enviar el archivo Excel por correo
     await sendEmail(processedFilePath, path.basename(processedFilePath));
-
     console.log("Correo enviado con éxito");
   } catch (error) {
     console.error("Error al procesar y enviar el archivo:", error);
   } finally {
-    // Eliminar el archivo generado
-    if (fs.existsSync(processedFilePath)) {
-      fs.unlinkSync(processedFilePath);
-    }
+    if (fs.existsSync(processedFilePath)) fs.unlinkSync(processedFilePath);
   }
 }
 
 // Ejecutar la función
 generateAndSendEmail();
-
