@@ -95,11 +95,13 @@ function descomponerDescripcion(texto) {
 
 // Generar y enviar el archivo Excel
 async function generateAndSendEmail() {
+  let processedFilePath = ""; // Declarar fuera del try
+
   try {
     const fecha = new Date();
     const dia = String(fecha.getDate()).padStart(2, "0");
     const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-    const processedFilePath = path.join(__dirname, "uploads", `acuerdos-${dia}-${mes}.xlsx`);
+    processedFilePath = path.join(__dirname, "uploads", `acuerdos-${dia}-${mes}.xlsx`);
 
     // Asegurar que la carpeta uploads existe
     if (!fs.existsSync(path.join(__dirname, "uploads"))) {
@@ -117,7 +119,7 @@ async function generateAndSendEmail() {
     ];
 
     const newdata = newdata1.map(row => {
-      const descripcion = descomponerDescripcion(row.descripcion);
+      const desc = descomponerDescripcion(row.descripcion);
       return {
         CODIGO: 13,
         DOCUMENTO: row.personas_nNumeDocu || "",
@@ -150,7 +152,10 @@ async function generateAndSendEmail() {
   } catch (error) {
     console.error("Error al procesar y enviar el archivo:", error);
   } finally {
-    if (fs.existsSync(processedFilePath)) fs.unlinkSync(processedFilePath);
+    // Verificar que la variable tiene un valor antes de intentar borrar
+    if (processedFilePath && fs.existsSync(processedFilePath)) {
+      fs.unlinkSync(processedFilePath);
+    }
   }
 }
 
