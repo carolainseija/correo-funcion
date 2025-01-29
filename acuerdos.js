@@ -1,7 +1,6 @@
-require('dotenv').config();  // Cargar variables de entorno
+require('dotenv').config(); // Cargar variables de entorno
 
 const express = require("express");
-const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const { google } = require("googleapis");
@@ -9,7 +8,6 @@ const ExcelJS = require("exceljs");
 
 // Accede a las variables de entorno
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, REFRESH_TOKEN } = process.env;
-
 const app = express();
 
 // Autenticación de Gmail con las credenciales de las variables de entorno
@@ -19,12 +17,7 @@ async function authenticate() {
     CLIENT_SECRET,
     REDIRECT_URI
   );
-
-  // Usar el refresh token para obtener nuevas credenciales
-  oAuth2Client.setCredentials({
-    refresh_token: REFRESH_TOKEN
-  });
-
+  oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
   return oAuth2Client;
 }
 
@@ -33,7 +26,6 @@ async function sendEmail(filePath, fileName) {
   try {
     const auth = await authenticate();
     const gmail = google.gmail({ version: "v1", auth });
-
     const attachment = fs.readFileSync(filePath).toString("base64");
 
     const rawMessage = [
@@ -63,12 +55,11 @@ async function sendEmail(filePath, fileName) {
       .replace(/\//g, "_")
       .replace(/=+$/, "");
 
-    const response = await gmail.users.messages.send({
+    await gmail.users.messages.send({
       userId: "me",
       requestBody: { raw: encodedMessage },
     });
-
-    console.log("Correo enviado con éxito:", response.data);
+    console.log("Correo enviado con éxito");
   } catch (error) {
     console.error("Error al enviar el correo:", error);
   }
@@ -101,10 +92,7 @@ async function generateAndSendEmail() {
     const mes = String(fecha.getMonth() + 1).padStart(2, "0");
     const processedFilePath = path.join(__dirname, "uploads", `acuerdos-${dia}-${mes}.xlsx`);
 
-    // Asegurar que la carpeta uploads existe
-    if (!fs.existsSync(path.join(__dirname, "uploads"))) {
-      fs.mkdirSync(path.join(__dirname, "uploads"));
-    }
+    if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
     // Datos de ejemplo
     const newdata1 = [
@@ -117,42 +105,31 @@ async function generateAndSendEmail() {
     ];
 
     const newdata = newdata1.map(row => {
-      const descripcion = descomponerDescripcion(row.descripcion);
+      const desc = descomponerDescripcion(row.descripcion);
       return {
         CODIGO: 13,
         DOCUMENTO: row.personas_nNumeDocu || "",
         NOMBRE: row.personas_cContacto || "",
         ENTREGA: 0,
-        MONTOcuota: descripcion.MONTOcuota || "",
-        CANTIDADcuotas: descripcion.CANTIDADcuotas || "",
-        FECHAgestion: "21/01/2025",
-        MONTOtotal: descripcion.MONTOtotal || "",
-        FECHApago: descripcion.FECHApago || "",
-        SUCURSAL: descripcion.LUGARpago || "",
+        "MONTO CUOTA": desc.MONTOcuota || "",
+        "CANTIDAD DE CUOTAS": desc.CANTIDADcuotas || "",
+        "FECHA GESTION": "21/01/2025",
+        "MONTO TOTAL": desc.MONTOtotal || "",
+        "FECHA PAGO": desc.FECHApago || "",
+        SUCURSAL: desc.LUGARpago || "",
         PRD: "",
       };
     });
 
-    // Crear archivo Excel
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Acuerdos");
 
-    // Agregar encabezados
-    const headers = [
-      "CODIGO",
-      "DOCUMENTO",
-      "NOMBRE",
-      "ENTREGA",
-      "MONTOcuota",
-      "CANTIDADcuotas",
-      "FECHAgestion",
-      "MONTOtotal",
-      "FECHApago",
-      "SUCURSAL",
-      "PRD",
-    ];
+    const headers = Object.keys(newdata[0]);
     worksheet.addRow(headers);
     newdata.forEach(row => worksheet.addRow(headers.map(key => row[key] || "")));
+
+    const columnWidths = [15, 30, 15, 20, 20, 25, 30, 20, 20, 15, 15];
+    columnWidths.forEach((width, i) => worksheet.getColumn(i + 1).width = width);
 
     await workbook.xlsx.writeFile(processedFilePath);
     await sendEmail(processedFilePath, path.basename(processedFilePath));
