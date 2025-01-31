@@ -116,6 +116,8 @@ async function generateAndSendEmail() {
         "personas_cContacto": "Maria ferreira",
         "descripcion": "Deuda adquirida: FUCEREP TARDIA - Deuda mínima total: 3800.00 - Deuda mÃ¡xima total: 3585.00 - Cantidad de cuota/s: 1 - Monto de cuota: 1934 - Primer vencimiento: 27/01/2025 - Observación corta: 1*1934-abitab-27/01 - Lugar de pago: abitab",
       } //descripcion sale de gestiones, si fuera de los reportes se deberia de agregar
+      //reporteria: Deuda máxima total: 1562.00
+      //gestiones map web: Deuda mínima total: 3800.00
     ];
 
     const newdata = newdata1.map(row => {
