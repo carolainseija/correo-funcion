@@ -36,10 +36,10 @@ async function sendEmail(filePath, fileName) {
 
     const attachment = fs.readFileSync(filePath).toString("base64");
     const rawMessage = [
-      "From: carolainsilva1@gmail.com",
+      "From: cseija@capta.uy",
       "To: carolainsilva1@gmail.com",
       "Cc: carolain@magayasociados.com", // Opcional: Copia visible
-      "Bcc: cseija@capta.uy", // Opcional: Copia oculta
+      // "Bcc: cseija@capta.uy", // copia oculta a gabriel
       "Subject: Acuerdos Credito Directos Capta",
       "Content-Type: multipart/mixed; boundary=boundary_string",
       "",
