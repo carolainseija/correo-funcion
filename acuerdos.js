@@ -35,10 +35,11 @@ async function sendEmail(filePath, fileName) {
     const gmail = google.gmail({ version: "v1", auth });
 
     const attachment = fs.readFileSync(filePath).toString("base64");
-
     const rawMessage = [
       "From: carolainsilva1@gmail.com",
       "To: carolainsilva1@gmail.com",
+      "Cc: carolain@magayasociados.com", // Opcional: Copia visible
+      "Bcc: cseija@capta.uy", // Opcional: Copia oculta
       "Subject: Acuerdos Credito Directos Capta",
       "Content-Type: multipart/mixed; boundary=boundary_string",
       "",
